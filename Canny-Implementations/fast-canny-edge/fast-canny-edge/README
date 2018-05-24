@@ -1,0 +1,20 @@
+*****************************************
+* FAST-EDGE                             *
+* Copyright (c) 2009 Benjamin C. Haynor *
+*****************************************
+
+Goals
+-----
+FAST-EDGE seeks to be the fastest edge detection implementation in C using only the standard C library.  The code should be clean and understandable to just about anyone.
+
+Compilation
+-----------
+To compile the example application, use:
+gcc -W -Wall -o fast-edge imageio.c fast-edge.c example.c -O3
+
+Explanation of the Example
+--------------------------
+The example basically performs Canny edge detection using functions in the FAST-EDGE implementation as described at http://en.wikipedia.org/wiki/Canny_edge_detector.
+
+However, in the example, morphological closing is utilized instead of Gaussian noise reduction.  Utilizing morphological opening and closing gives a different output than using Gaussian noise reduction, resulting in fewer edges being detected.  This can be useful depending on one's application.  For example, if the output is going to be fed into a line-finding algorithm (which generally have longer running times) such as the Hough transform or the RAST algorithm, it may be beneficial to have fewer edge pixels to process and morphological opening or closing operations may result in better performance of the line-finding algorithm.
+
