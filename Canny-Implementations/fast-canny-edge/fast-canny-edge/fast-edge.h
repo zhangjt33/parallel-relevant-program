@@ -36,7 +36,7 @@
 //#define WIDTH 640			// uncomment to define width for situations where width is always known
 //#define HEIGHT 480		// uncomment to define heigh for situations where height is always known
 
-//#define CLOCK			// uncomment to show running times of image processing functions (in seconds)
+#define CLOCK		c	// uncomment to show running times of image processing functions (in seconds)
 //#define ABS_APPROX		// uncomment to use the absolute value approximation of sqrt(Gx ^ 2 + Gy ^2)
 //#define PRINT_HISTOGRAM	// uncomment to print the histogram used to estimate the threshold
 

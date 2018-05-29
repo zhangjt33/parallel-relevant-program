@@ -32,6 +32,8 @@
 #include "imageio.h"
 #include "fast-edge.h"
 
+#include <immintrin.h>
+
 /*
 	CANNY EDGE DETECT
 	DOES NOT PERFORM NOISE REDUCTION - PERFORM NOISE REDUCTION PRIOR TO USE
@@ -86,33 +88,62 @@ void gaussian_noise_reduce(struct image * img_in, struct image * img_out)
 	max_y = w * (h - 2);
 
 	// can it be optimized?
-	for (y = w * 2; y < max_y; y += w) {
-		for (x = 2; x < max_x; x++) {
-			img_out->pixel_data[x + y] = (2 * img_in->pixel_data[x + y - 2 - w - w] + 
-			4 * img_in->pixel_data[x + y - 1 - w - w] + 
-			5 * img_in->pixel_data[x + y - w - w] + 
-			4 * img_in->pixel_data[x + y + 1 - w - w] + 
-			2 * img_in->pixel_data[x + y + 2 - w - w] + 
-			4 * img_in->pixel_data[x + y - 2 - w] + 
-			9 * img_in->pixel_data[x + y - 1 - w] + 
-			12 * img_in->pixel_data[x + y - w] + 
-			9 * img_in->pixel_data[x + y + 1 - w] + 
-			4 * img_in->pixel_data[x + y + 2 - w] + 
-			5 * img_in->pixel_data[x + y - 2] + 
-			12 * img_in->pixel_data[x + y - 1] + 
-			15 * img_in->pixel_data[x + y] + 
-			12 * img_in->pixel_data[x + y + 1] + 
-			5 * img_in->pixel_data[x + y + 2] + 
-			4 * img_in->pixel_data[x + y - 2 + w] + 
-			9 * img_in->pixel_data[x + y - 1 + w] + 
-			12 * img_in->pixel_data[x + y + w] + 
-			9 * img_in->pixel_data[x + y + 1 + w] + 
-			4 * img_in->pixel_data[x + y + 2 + w] + 
-			2 * img_in->pixel_data[x + y - 2 + w + w] + 
-			4 * img_in->pixel_data[x + y - 1 + w + w] + 
-			5 * img_in->pixel_data[x + y + w + w] + 
-			4 * img_in->pixel_data[x + y + 1 + w + w] + 
-			2 * img_in->pixel_data[x + y + 2 + w + w]) / 159;
+	// for (y = w * 2; y < max_y; y += w) {
+	// 	for (x = 2; x < max_x; x++) {
+	// 		img_out->pixel_data[x + y] = (2 * img_in->pixel_data[x + y - 2 - w - w] + 
+	// 		4 * img_in->pixel_data[x + y - 1 - w - w] + 
+	// 		5 * img_in->pixel_data[x + y - w - w] + 
+	// 		4 * img_in->pixel_data[x + y + 1 - w - w] + 
+	// 		2 * img_in->pixel_data[x + y + 2 - w - w] + 
+	// 		4 * img_in->pixel_data[x + y - 2 - w] + 
+	// 		9 * img_in->pixel_data[x + y - 1 - w] + 
+	// 		12 * img_in->pixel_data[x + y - w] + 
+	// 		9 * img_in->pixel_data[x + y + 1 - w] + 
+	// 		4 * img_in->pixel_data[x + y + 2 - w] + 
+	// 		12 * img_in->pixel_data[x + y - 1] + 
+	// 		5 * img_in->pixel_data[x + y - 2] + 
+	// 		15 * img_in->pixel_data[x + y] + 
+	// 		12 * img_in->pixel_data[x + y + 1] + 
+	// 		5 * img_in->pixel_data[x + y + 2] + 
+	// 		4 * img_in->pixel_data[x + y - 2 + w] + 
+	// 		9 * img_in->pixel_data[x + y - 1 + w] + 
+	// 		9 * img_in->pixel_data[x + y + 1 + w] + 
+	// 		12 * img_in->pixel_data[x + y + w] + 
+	// 		4 * img_in->pixel_data[x + y + 2 + w] + 
+	// 		2 * img_in->pixel_data[x + y - 2 + w + w] + 
+	// 		4 * img_in->pixel_data[x + y - 1 + w + w] + 
+	// 		5 * img_in->pixel_data[x + y + w + w] + 
+	// 		4 * img_in->pixel_data[x + y + 1 + w + w] + /
+	// 		2 * img_in->pixel_data[x + y + 2 + w + w]) / 159;
+	// 	}	
+	// 	}
+
+	__mm256 factor1, factor2, result;
+	__mm256 div_159 = _mm256_set1_ps(159.0);
+	for(y = w * 2; y < max_y; y += w){
+		for(x = 2; x < max_x; x += 8){
+			int offset = x + y;
+
+			result = _mm256_set1_ps(0);
+
+			int mul[25]={2,4,5,4,2,4,9,12,9,4,12,5,15,12,5,4,9,9,12,4,2,4,5,4,2};
+			int add[25]={-2-w-w, -1-w-w, -w-w, 1-w-w, 2-w-w, -2-w, -1-w, -w, 1-w, 2-w, -1, -2, 0, 1, 2, -2+w, -1+w, 1+w, w, 2+w, -2+w+w,-1+w+w, w+w, 1+w+w, 2+w+w};
+			for(int i = 0; i < 25; i++){
+				factor1 = _mm256_set1_ps(mul[i]);
+				factor2 = _mm256_setr_ps(img_in->pixel_data[offset + 7 + add[i]], img_in->pixel_data[offset + 6 + add[i]], 
+									 	 img_in->pixel_data[offset + 5 + add[i]], img_in->pixel_data[offset + 4 + add[i]],
+									 	 img_in->pixel_data[offset + 3 + add[i]], img_in->pixel_data[offset + 2 + add[i]],
+									 	 img_in->pixel_data[offset + 1 + add[i]], img_in->pixel_data[offset + 0 + add[i]]);
+				factor1 = _mm256_mul_ps(factor1, factor2);
+				result = _mm256_add_ps(result, factor1);
+			}
+
+			result = _mm256_div_ps(result, div_159);
+
+			for(int i = 0; i < 8; i++)
+				img_out->pixel_data[offset + i] = (int)result[i];
+
+
 		}
 	}
 	#ifdef CLOCK
