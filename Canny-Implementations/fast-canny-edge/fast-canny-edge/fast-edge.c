@@ -84,6 +84,8 @@ void gaussian_noise_reduce(struct image * img_in, struct image * img_out)
 	img_out->height = h;
 	max_x = w - 2;
 	max_y = w * (h - 2);
+
+	// can it be optimized?
 	for (y = w * 2; y < max_y; y += w) {
 		for (x = 2; x < max_x; x++) {
 			img_out->pixel_data[x + y] = (2 * img_in->pixel_data[x + y - 2 - w - w] + 
@@ -133,6 +135,8 @@ void calc_gradient_sobel(struct image * img_in, int g[], int dir[]) {
 	h = img_in->height;
 	max_x = w - 3;
 	max_y = w * (h - 3);
+
+	// can here be optimized?
 	for (y = w * 3; y < max_y; y += w) {
 		for (x = 3; x < max_x; x++) {
 			g_x = (2 * img_in->pixel_data[x + y + 1] 
@@ -218,6 +222,8 @@ void calc_gradient_scharr(struct image * img_in, int g_x[], int g_y[], int g[], 
 	max_x = w - 1;
 	max_y = w * (h - 1);
 	n = 0;
+
+	// can here be optimized?
 	for (y = w; y < max_y; y += w) {
 		for (x = 1; x < max_x; x++) {
 			g_x[n] = (10 * img_in->pixel_data[x + y + 1] 
@@ -288,7 +294,9 @@ void non_max_suppression(struct image * img, int g[], int dir[]) {//float theta[
 	h = img->height;
 	max_x = w;
 	max_y = w * h;
-	for (y = 0; y < max_y; y += w) {
+
+	// can here be optimized?
+	for (y = w; y < max_y; y += w) {
 		for (x = 0; x < max_x; x++) {
 			switch (dir[x + y]) {
 				case 0:
@@ -357,9 +365,13 @@ void estimate_threshold(struct image * img, int * high, int * low) {
 	int i, max, pixels, high_cutoff;
 	int histogram[256];
 	max = img->width * img->height;
+
+	// -o3:split to 0 loops and 1 library calls.
 	for (i = 0; i < 256; i++) {
 		histogram[i] = 0;
 	}
+
+	// can here be optimized?
 	for (i = 0; i < max; i++) {
 		histogram[img->pixel_data[i]]++;
 	}
@@ -394,6 +406,8 @@ void hysteresis (int high, int low, struct image * img_in, struct image * img_ou
 	#endif
 	int x, y, n, max;
 	max = img_in->width * img_in->height;
+
+	// can here be optimized?
 	for (n = 0; n < max; n++) {
 		img_out->pixel_data[n] = 0x00;
 	}
@@ -415,8 +429,11 @@ int trace(int x, int y, int low, struct image * img_in, struct image * img_out)
 	if (img_out->pixel_data[y * img_out->width + x] == 0)
 	{
 		img_out->pixel_data[y * img_out->width + x] = 0xFF;
+
+		//  -o3:loop turned into non-loop; it never loops.
 		for (y_off = -1; y_off <=1; y_off++)
 		{
+			// -o3: loop turned into non-loop; it never loops.loop with 4 iterations completely unrolled
 		    for(x_off = -1; x_off <= 1; x_off++)
 		    {
 				if (!(y == 0 && x_off == 0) && range(img_in, x + x_off, y + y_off) && img_in->pixel_data[(y + y_off) * img_out->width + x + x_off] >= low) {
@@ -446,6 +463,8 @@ int range(struct image * img, int x, int y)
 void dilate_1d_h(struct image * img, struct image * img_out) {
 	int x, y, offset, y_max;
 	y_max = img->height * (img->width - 2);
+
+	// can here be optimized?
 	for (y = 2 * img->width; y < y_max; y += img->width) {
 		for (x = 2; x < img->width - 2; x++) {
 			offset = x + y;
@@ -457,6 +476,8 @@ void dilate_1d_h(struct image * img, struct image * img_out) {
 void dilate_1d_v(struct image * img, struct image * img_out) {
 	int x, y, offset, y_max;
 	y_max = img->height * (img->width - 2);
+
+	// can here be optimized?
 	for (y = 2 * img->width; y < y_max; y += img->width) {
 		for (x = 2; x < img->width - 2; x++) {
 			offset = x + y;
@@ -468,6 +489,8 @@ void dilate_1d_v(struct image * img, struct image * img_out) {
 void erode_1d_h(struct image * img, struct image * img_out) {
 	int x, y, offset, y_max;
 	y_max = img->height * (img->width - 2);
+
+	// can here be optimized?
 	for (y = 2 * img->width; y < y_max; y += img->width) {
 		for (x = 2; x < img->width - 2; x++) {
 			offset = x + y;
@@ -479,6 +502,8 @@ void erode_1d_h(struct image * img, struct image * img_out) {
 void erode_1d_v(struct image * img, struct image * img_out) {
 	int x, y, offset, y_max;
 	y_max = img->height * (img->width - 2);
+
+	// can here be optimized?
 	for (y = 2 * img->width; y < y_max; y += img->width) {
 		for (x = 2; x < img->width - 2; x++) {
 			offset = x + y;
