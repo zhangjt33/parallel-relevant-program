@@ -118,8 +118,8 @@ void gaussian_noise_reduce(struct image * img_in, struct image * img_out)
 	// 	}	
 	// 	}
 
-	__mm256 factor1, factor2, result;
-	__mm256 div_159 = _mm256_set1_ps(159.0);
+	__m256 factor1, factor2, result, div_159;
+	div_159 = _mm256_set1_ps(159.0);
 	for(y = w * 2; y < max_y; y += w){
 		for(x = 2; x < max_x; x += 8){
 			int offset = x + y;
@@ -141,7 +141,7 @@ void gaussian_noise_reduce(struct image * img_in, struct image * img_out)
 			result = _mm256_div_ps(result, div_159);
 
 			for(int i = 0; i < 8; i++)
-				img_out->pixel_data[offset + i] = (int)result[i];
+				img_out->pixel_data[offset + i] = (int)result[7-i];
 
 
 		}
