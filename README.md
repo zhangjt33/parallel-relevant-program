@@ -1,2 +1,2 @@
 # parallel-relevant-program
-## here may have some MPI, pthread, openMP, and SSE/AVX programs
+## Here are some MPI, pthread, openMP, and SIMD programs.
